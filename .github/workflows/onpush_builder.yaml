@@ -6,15 +6,16 @@ on:
   workflow_call:
   push:
     branches:
-      - master
+      - fireflyiii-ingress
     paths:
       - "**/config.*"
 
 jobs:
   detect-changed-addons:
+    # TEMPORARY (fork testing - DELETE BEFORE PR): xblitz owner added
     if: >-
       ${{
-        github.repository_owner == 'alexbelgium' &&
+        github.repository_owner == 'xblitz' &&
         (github.event_name != 'push' || !contains(github.event.head_commit.message, 'nobuild'))
       }}
     runs-on: ubuntu-latest
@@ -29,15 +30,28 @@ jobs:
       - name: Find add-on directories to process
         id: find_addons
         run: |
-          set -euo pipefail
+          set -euxo pipefail
 
           if [ "${{ github.event_name }}" = "push" ]; then
-            before="${{ github.event.before }}"
-            if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ]; then
-              git fetch --no-tags --depth=1 origin "$before" || true
-              changed_config_files=$(git diff --name-only "$before" "${{ github.sha }}" | grep -E '^[^/]+/config\.(json|ya?ml)$' || true)
+            # TEMPORARY (fork testing - DELETE BEFORE PR): on branches, diff
+            # the whole branch against master instead of the push range. The
+            # push-range logic fails silently on branches: new-branch pushes
+            # inspect only the tip commit, and after a force-push `before`
+            # is unresolvable, which the `|| true` swallows into an empty
+            # result and no builds.
+            if [ "${{ github.ref }}" != "refs/heads/master" ]; then
+              git fetch --no-tags origin master
+              base=$(git merge-base origin/master "${{ github.sha }}")
+              echo "Branch base: $base"
+              changed_config_files=$(git diff --name-only "$base" "${{ github.sha }}" | grep -E '^[^/]+/config\.(json|ya?ml)$' || true)
             else
-              changed_config_files=$(git diff-tree --no-commit-id --name-only -r "${{ github.sha }}" | grep -E '^[^/]+/config\.(json|ya?ml)$' || true)
+              before="${{ github.event.before }}"
+              if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ]; then
+                git fetch --no-tags --depth=1 origin "$before" || true
+                changed_config_files=$(git diff --name-only "$before" "${{ github.sha }}" | grep -E '^[^/]+/config\.(json|ya?ml)$' || true)
+              else
+                changed_config_files=$(git diff-tree --no-commit-id --name-only -r "${{ github.sha }}" | grep -E '^[^/]+/config\.(json|ya?ml)$' || true)
+              fi
             fi
             echo "Changed config files:"
             printf '%s\n' "$changed_config_files"
@@ -67,7 +81,7 @@ jobs:
         env:
           ADDONS_JSON: ${{ needs.detect-changed-addons.outputs.changedAddons }}
         run: |
-          set -euo pipefail
+          set -euxo pipefail
 
           UNICODE_SPACES_REGEX=$'[\u00A0\u2002\u2003\u2007\u2008\u2009\u202F\u205F\u3000\u200B]'
           mapfile -t addons < <(jq -r '.[]' <<<"$ADDONS_JSON")
@@ -148,7 +162,7 @@ jobs:
         env:
           ADDON: ${{ matrix.addon }}
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           TEMPLATES_DIR=".templates"
           ADDON_DIR="./$ADDON"
 
@@ -170,7 +184,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           GITHUB_SHA_VALUE: ${{ github.sha }}
         run: |
-          set -euo pipefail
+          set -euxo pipefail
 
           python3 - <<'PY'
           import json
