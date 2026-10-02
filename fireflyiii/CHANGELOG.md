@@ -1,4 +1,7 @@
  
+## 6.7.4.1 (2026-10-02)
+- Enable Home Assistant ingress: sidebar/panel access via an nginx ingress listener on 8099 (direct :8080 access unchanged for API/importers)
+
 ## 6.7.4 (2026-09-26)
 - Update to latest version from firefly-iii/firefly-iii (changelog : https://github.com/firefly-iii/firefly-iii/releases)
  

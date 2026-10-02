@@ -67,11 +67,15 @@ devices:
 environment:
   TRUSTED_PROXIES: "**"
 image: ghcr.io/alexbelgium/fireflyiii-{arch}
+ingress: true
 init: false
 map:
   - config:rw
   - share:rw
 name: Firefly iii
+panel_admin: false
+panel_icon: mdi:finance
+panel_title: Firefly III
 options:
   env_vars: []
   APP_KEY: CHANGEME_32_CHARS_EuC5dfn3LAPzeO
@@ -104,5 +108,4 @@ slug: fireflyiii
 startup: services
 udev: true
 url: https://github.com/alexbelgium/hassio-addons
-version: "6.7.4"
-webui: "[PROTO:ssl]://[HOST]:[PORT:8080]"
+version: "6.7.4.1"
